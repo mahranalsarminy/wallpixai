@@ -1,6 +1,14 @@
 <?php
-
+use App\Http\Controllers\Admin\FeaturedContentController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\MediaRatingController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\MediaAnalyticsController;
+use App\Http\Controllers\MediaReportController;
+use App\Http\Controllers\CommentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +105,7 @@ Route::group(localizeOptions(), function () {
                 });
             });
         });
+
         Route::middleware(['oauth.complete', 'verified', '2fa.verify'])->group(function () {
             Route::get('/', 'HomeController@index')->name('home');
 
@@ -136,3 +145,34 @@ Route::group(localizeOptions(), function () {
         });
     });
 });
+
+// Media Rating Routes
+Route::post('media/{media}/ratings', [MediaRatingController::class, 'store'])->name('media.ratings.store');
+
+// Tag Routes
+Route::get('tags/{tag}', [TagController::class, 'index'])->name('tags.index');
+
+// Advanced Search Routes
+Route::get('search', [SearchController::class, 'index'])->name('search');
+
+// Media Analytics Routes
+Route::get('media/{media}/analytics', [MediaAnalyticsController::class, 'show'])->name('media.analytics.show');
+
+// Media Report Routes
+Route::post('media/{media}/reports', [MediaReportController::class, 'store'])->name('media.reports.store');
+Route::get('admin/reports', [MediaReportController::class, 'index'])->name('admin.reports.index');
+Route::put('admin/reports/{report}', [MediaReportController::class, 'update'])->name('admin.reports.update');
+
+// Comment Routes
+Route::post('media/{media}/comments', [CommentController::class, 'store'])->name('comments.store');
+Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+
+// Authentication Routes
+Auth::routes();
+
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('featured-content', [FeaturedContentController::class, 'index'])->name('featured-content.index');
+    Route::post('featured-content', [FeaturedContentController::class, 'store'])->name('featured-content.store');
+});
+
+Route::get('/', [HomeController::class, 'index'])->name('home.index');

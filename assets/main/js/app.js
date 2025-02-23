@@ -423,4 +423,166 @@
             changeCaptchaTheme('light');
         }
     }
-})(jQuery);
+let generatorOptionsBtn = $('#generator-options-btn'),
+    generatorOptions = $('.generator-options');
+
+generatorOptionsBtn.on('click', function() {
+    generatorOptions.toggleClass('d-none');
+});
+
+let modelEngine = $('#modelEngine'),
+    negativePrompt = $('#negativePrompt'),
+    sizes = $('#sizes'),
+    sizesSelect = sizes.find('.form-select'),
+    artStyles = $('#artStyles'),
+    artStylesSelect = artStyles.find('.form-select'),
+    lightningStyles = $('#lightningStyles'),
+    lightningStylesSelect = lightningStyles.find('.form-select'),
+    moods = $('#moods'),
+    moodsSelect = moods.find('.form-select'),
+    samples = $('#samples'),
+    samplesSelect = samples.find('.form-select');
+
+function loadOptions() {
+    let selectedOption = modelEngine.find('option:selected');
+    negativePrompt.toggleClass('d-none', selectedOption.data('np') != 1);
+
+    if (selectedOption.data('sz')) {
+        sizesSelect.empty();
+        $.each(selectedOption.data('sz'), function(index, value) {
+            sizesSelect.append($('<option>', { value: value, text: value }));
+        });
+        sizes.removeClass('d-none');
+    } else {
+        sizes.addClass('d-none');
+    }
+
+    if (selectedOption.data('as')) {
+        artStylesSelect.empty();
+        artStylesSelect.append($('<option>', { value: '', text: '--' }));
+        $.each(selectedOption.data('as'), function(index, value) {
+            artStylesSelect.append($('<option>', { value: value, text: value }));
+        });
+        artStyles.removeClass('d-none');
+    } else {
+        artStyles.addClass('d-none');
+    }
+
+    if (selectedOption.data('ls')) {
+        lightningStylesSelect.empty();
+        lightningStylesSelect.append($('<option>', { value: '', text: '--' }));
+        $.each(selectedOption.data('ls'), function(index, value) {
+            lightningStylesSelect.append($('<option>', { value: value, text: value }));
+        });
+        lightningStyles.removeClass('d-none');
+    } else {
+        lightningStyles.addClass('d-none');
+    }
+
+    if (selectedOption.data('moods')) {
+        moodsSelect.empty();
+        moodsSelect.append($('<option>', { value: '', text: '--' }));
+        $.each(selectedOption.data('moods'), function(index, value) {
+            moodsSelect.append($('<option>', { value: value, text: value }));
+        });
+        moods.removeClass('d-none');
+    } else {
+        moods.addClass('d-none');
+    }
+
+    if (selectedOption.data('samples')) {
+        samplesSelect.empty();
+        $.each(selectedOption.data('samples'), function(index, value) {
+            samplesSelect.append($('<option>', { value: value, text: value }));
+        });
+        samples.toggleClass('d-none', selectedOption.data('samples').length <= 1);
+    } else {
+        samples.addClass('d-none');
+    }
+}
+
+loadOptions();
+
+modelEngine.on('change', loadOptions);
+
+let generatorForm = $('#generator');
+
+generatorForm.on('submit', function(e) {
+    var reportValidity = generatorForm[0].reportValidity();
+
+    if (reportValidity) {
+        e.preventDefault();
+
+        let action = $(this).attr('action'),
+            formData = generatorForm.serializeArray(),
+            generatorPromptInput = $('#generator input'),
+            generatorSamples = $('#generator select[name=samples]'),
+            generatorImagesSize = $('#generator select[name=size]'),
+            generatorBtn = $('#generator button'),
+            generatorProcessing = $('.processing');
+
+        let defaultImages = $('#default-images'),
+            generatedImages = $('#generated-images'),
+            viewAllImagesButton = $('#viewAllImagesButton'),
+            faqs = $('#faqs'),
+            blogArticles = $('#blogArticles');
+
+        if (generatorPromptInput.val() === '') {
+            toastr.error(getConfig.generatorPromptError);
+        } else if (generatorSamples.val() === null) {
+            toastr.error(getConfig.generatorSamplesError);
+        } else if (generatorImagesSize.val() === null) {
+            toastr.error(getConfig.generatorSizeError);
+        } else {
+            $.ajax({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                url: action,
+                type: "POST",
+                data: formData,
+                dataType: 'json',
+                beforeSend: onAjaxStart,
+                success: function(response) {
+                    onAjaxStop();
+                    if ($.isEmptyObject(response.error)) {
+                        $.each(response.images, function(index, item) {
+                            generatedImages.prepend('<div class="col"> <div class="ai-image"> <img class="lazy" data-src="' + item.src + '" alt="' + item.prompt + '" /> <div class="spinner-border"></div> <div class="ai-image-hover"> <p class="mb-0">' + item.prompt + '</p> <div class="row g-2 alig-items-center"> <div class="col"> <a href="' + item.link + '" target="_blank" class="btn btn-primary btn-md w-100">' + getConfig.translates.viewImage + '</a> </div> <div class="col-auto"> <a href="' + item.download_link + '" class="btn btn-light btn-md px-3"><i class="fas fa-download"></i></a> </div> </div> </div> </div> </div>');
+                            generatedImages.removeClass('d-none');
+                            lazyLoad();
+                        });
+                    } else {
+                        onAjaxStop();
+                        generatedImages.addClass('d-none');
+                        defaultImages.removeClass('d-none');
+                        viewAllImagesButton.removeClass('d-none');
+                        toastr.error(response.error);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    onAjaxStop();
+                    generatedImages.addClass('d-none');
+                    defaultImages.removeClass('d-none');
+                    viewAllImagesButton.removeClass('d-none');
+                    toastr.error(errorThrown);
+                }
+            });
+        }
+
+        function onAjaxStart() {
+            generatorBtn.prop('disabled', true);
+            generatorForm.addClass('d-none');
+            defaultImages.addClass('d-none');
+            viewAllImagesButton.addClass('d-none');
+            blogArticles.addClass('d-none');
+            generatorProcessing.removeClass('d-none');
+        }
+
+        function onAjaxStop() {
+            generatorBtn.prop('disabled', false);
+            generatorProcessing.addClass('d-none');
+            generatorForm.removeClass('d-none');
+            viewAllImagesButton.removeClass('d-none');
+            blogArticles.removeClass('d-none');
+        }
+    })(jQuery);

@@ -64,6 +64,9 @@ class Plan extends Model
         'is_free',
         'login_require',
         'is_featured',
+        'max_image_downloads',
+        'max_video_downloads',
+        'watermark_downloads',
     ];
 
     protected $casts = [

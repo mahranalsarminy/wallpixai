@@ -108,4 +108,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(GeneratedImage::class);
     }
+    // Other model properties and methods...
+
+    public function favoriteImages()
+    {
+        return $this->belongsToMany(GeneratedImage::class, 'user_favorite_images');
+    }
+
+    public function favoriteVideos()
+    {
+        return $this->belongsToMany(GeneratedVideo::class, 'user_favorite_videos');
+    }
 }
